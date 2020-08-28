@@ -1,26 +1,56 @@
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 
 public class Reminder {
+    private static Map<String, String> map;
+
+    private static void makeMap(String[] args) {
+        map = new HashMap<>();
+        for (String arg : args) {
+            if (arg.contains("-")) {
+                if (arg.contains("=")) {
+                    String tmp_key = arg.substring(1, arg.indexOf('='));
+                    String tmp_val = arg.substring(arg.indexOf('=') + 1);
+                    map.put(tmp_key, tmp_val);
+                }
+            }
+        }
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
-        if(args.length < 0) {
+        makeMap(args);
+
+
+        if (!map.containsKey("filterNumber") ||
+                !map.containsKey("user") ||
+                !map.containsKey("password") ||
+                !map.containsKey("webhookUrl") ||
+                !map.containsKey("timeout") ||
+                !map.containsKey("filterName") ||
+                !map.containsKey("flagWebhookUrl") ||
+                !map.containsKey("jiraUrl")) {
             System.out.println("Error! Some parameters are missing!");
             System.out.println("Script parameters should be:");
-            System.out.println("Jira filter number, Jira username, Jira password, Slack webhook URL devided by space");
-            System.out.println("Eg: 66666 User.Userovich StrongPassword https://hooks.slack.com/.... 10000 \"MT Filter\"");
+            System.out.println("Eg:java -jar <jarName> " +
+                    "-jiraUrl=\"https://jira.jira.com\"" +
+                    "-filterNumber=66666 -user=User.Userovich " +
+                    "-password=StrongPassword -webhookUrl=\"https://hooks.slack.com/....\" " +
+                    "-timeout=10000 -filterName=\"MT Filter\" " +
+                    "-flagWebhookUrl=\"https://hooks.slack.com/....\"");
             System.exit(0);
         }
-        String filterNumber = args[0];
-        String user = args[1];
-        String pass = args[2];
-        String webhookUrl = args[3];
-        int timeout = Integer.parseInt(args[4]);
-        String filterName = args[5];
-        String jiraUrl = "https://jira.zoomint.com";
+        String filterNumber = map.get("filterNumber");
+        String user = map.get("user");
+        String pass = map.get("password");
+        String webhookUrl = map.get("webhookUrl");
+        int timeout = Integer.parseInt(map.get("timeout"));
+        String filterName = map.get("filterName");
+        String flagWebhookUrl = map.get("flagWebhookUrl");
+        String jiraUrl = map.get("jiraUrl");
 
         Set<String> actualIssuesList = new LinkedHashSet<>();
         Set<String> previousIssuesList = new LinkedHashSet<>();
@@ -30,7 +60,15 @@ public class Reminder {
         Set<String> tmp2 = new LinkedHashSet<>();
         ZoomJira connection = new ZoomJira(jiraUrl, user, pass);
         String request = "filter=" + filterNumber;
-        while(true) {
+        JSONArray jsonIssuesListStarted = connection.getFilterList(request);
+        for (int i = 0; i < jsonIssuesListStarted.length(); i++) {
+            String issue = jsonIssuesListStarted.getJSONObject(i).getString("key");
+            actualIssuesList.add(issue);
+        }
+        ZoomSlack.sendMessage(":white_check_mark: Monitor for filter " + filterName +
+                " started successfully, there are " + actualIssuesList.size() +
+                " issues in the filter now!", flagWebhookUrl);
+        while (true) {
             tmp1.clear();
             tmp2.clear();
             addedIssuesList.clear();
@@ -39,9 +77,9 @@ public class Reminder {
             previousIssuesList.addAll(actualIssuesList);
             actualIssuesList.clear();
             JSONArray jsonIssuesList = connection.getFilterList(request);
-            for(int i = 0; i< jsonIssuesList.length(); i++) {
+            for (int i = 0; i < jsonIssuesList.length(); i++) {
                 String issue = jsonIssuesList.getJSONObject(i).getString("key");
-                    actualIssuesList.add(issue);
+                actualIssuesList.add(issue);
             }
 
             // GETTING REMOVED ISSUES
@@ -74,13 +112,14 @@ public class Reminder {
             tmp1.clear();
             tmp2.clear();
 
-            if(!addedIssuesList.isEmpty()) {
-                for(String item : addedIssuesList) {
+            if (!addedIssuesList.isEmpty()) {
+                for (String item : addedIssuesList) {
                     JSONObject json_item = connection.getIssueInfo(item);
                     String priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
                     String summary = json_item.getJSONObject("fields").getString("summary");
 
-                    String message_text = ":heavy_plus_sign: New issue in *<" + jiraUrl + "/issues/?filter=" + filterNumber + "|" + filterName + ">*\n" +
+                    String message_text = ":heavy_plus_sign: New issue in *<" + jiraUrl +
+                            "/issues/?filter=" + filterNumber + "|" + filterName + ">*\n" +
                             "*:black_small_square:Issue: * <" + jiraUrl + "/browse/" + item + "|" + item + ">\n" +
                             "*:black_small_square:Priority: * " + priority + "\n" +
                             "*:black_small_square:Summary: * " + summary + "\n" +
@@ -89,16 +128,19 @@ public class Reminder {
                 }
             }
 
-            if(!removedIssuesList.isEmpty()) {
-                for(String item : removedIssuesList) {
+            if (!removedIssuesList.isEmpty()) {
+                for (String item : removedIssuesList) {
                     JSONObject json_item = connection.getIssueInfo(item);
                     String priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
                     String summary = json_item.getJSONObject("fields").getString("summary");
+                    String resolution = json_item.getJSONObject("fields").getJSONObject("resolution").getString("name");
 
-                    String message_text = ":heavy_minus_sign: Issue removed from *<" + jiraUrl + "/issues/?filter=" + filterNumber + "|" + filterName + ">*\n" +
+                    String message_text = ":heavy_minus_sign: Issue removed from *<" + jiraUrl + "/issues/?filter=" +
+                            filterNumber + "|" + filterName + ">*\n" +
                             "*:black_small_square:Issue: * <" + jiraUrl + "/browse/" + item + "|" + item + ">\n" +
                             "*:black_small_square:Priority: * " + priority + "\n" +
                             "*:black_small_square:Summary: * " + summary + "\n" +
+                            "*:black_small_square:Resolution: * " + resolution + "\n" +
                             "*:black_small_square:Total in filter: * " + connection.getFilterCount(request);
                     ZoomSlack.sendMessage(message_text, webhookUrl);
                 }
