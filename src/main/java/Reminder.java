@@ -115,11 +115,11 @@ public class Reminder {
             if (!addedIssuesList.isEmpty()) {
                 for (String item : addedIssuesList) {
                     JSONObject json_item = connection.getIssueInfo(item);
-                    String priority = "N/A";
+                    String priority = "None";
                     try {
                         priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
                     } catch (org.json.JSONException exception) {
-                        priority = exception.getMessage();
+                        priority = "None";
                     }
 
                     String summary = json_item.getJSONObject("fields").getString("summary");
@@ -137,18 +137,18 @@ public class Reminder {
             if (!removedIssuesList.isEmpty()) {
                 for (String item : removedIssuesList) {
                     JSONObject json_item = connection.getIssueInfo(item);
-                    String priority = "N/A";
-                    String resolution = "N/A";
+                    String priority = "None";
+                    String resolution = "None";
                     try {
                         priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
                     } catch (org.json.JSONException exception) {
-                        priority = exception.getMessage();
+                        priority = "None";
                     }
                     String summary = json_item.getJSONObject("fields").getString("summary");
                     try {
                         resolution = json_item.getJSONObject("fields").getJSONObject("resolution").getString("name");
                     } catch (org.json.JSONException exception) {
-                        resolution = exception.getMessage();
+                        resolution = "None";
                     }
 
                     String message_text = ":heavy_minus_sign: Issue removed from *<" + jiraUrl + "/issues/?filter=" +
