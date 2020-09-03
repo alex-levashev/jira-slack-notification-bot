@@ -115,7 +115,13 @@ public class Reminder {
             if (!addedIssuesList.isEmpty()) {
                 for (String item : addedIssuesList) {
                     JSONObject json_item = connection.getIssueInfo(item);
-                    String priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
+                    String priority = "N/A";
+                    try {
+                        priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
+                    } catch (org.json.JSONException exception) {
+                        priority = exception.getMessage();
+                    }
+
                     String summary = json_item.getJSONObject("fields").getString("summary");
 
                     String message_text = ":heavy_plus_sign: New issue in *<" + jiraUrl +
@@ -131,9 +137,19 @@ public class Reminder {
             if (!removedIssuesList.isEmpty()) {
                 for (String item : removedIssuesList) {
                     JSONObject json_item = connection.getIssueInfo(item);
-                    String priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
+                    String priority = "N/A";
+                    String resolution = "N/A";
+                    try {
+                        priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
+                    } catch (org.json.JSONException exception) {
+                        priority = exception.getMessage();
+                    }
                     String summary = json_item.getJSONObject("fields").getString("summary");
-                    String resolution = json_item.getJSONObject("fields").getJSONObject("resolution").getString("name");
+                    try {
+                        resolution = json_item.getJSONObject("fields").getJSONObject("resolution").getString("name");
+                    } catch (org.json.JSONException exception) {
+                        resolution = exception.getMessage();
+                    }
 
                     String message_text = ":heavy_minus_sign: Issue removed from *<" + jiraUrl + "/issues/?filter=" +
                             filterNumber + "|" + filterName + ">*\n" +
