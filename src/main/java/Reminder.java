@@ -68,97 +68,110 @@ public class Reminder {
         ZoomSlack.sendMessage(":white_check_mark: Monitor for filter " + filterName +
                 " started successfully, there are " + actualIssuesList.size() +
                 " issues in the filter now!", flagWebhookUrl);
+        boolean jiraAvailabilityFlag = true;
         while (true) {
-            tmp1.clear();
-            tmp2.clear();
-            addedIssuesList.clear();
-            removedIssuesList.clear();
-            previousIssuesList.clear();
-            previousIssuesList.addAll(actualIssuesList);
-            actualIssuesList.clear();
-            JSONArray jsonIssuesList = connection.getFilterList(request);
-            for (int i = 0; i < jsonIssuesList.length(); i++) {
-                String issue = jsonIssuesList.getJSONObject(i).getString("key");
-                actualIssuesList.add(issue);
-            }
-
-            // GETTING REMOVED ISSUES
-            // TODO FIX THIS PART OF THE CODE
-            tmp1.addAll(actualIssuesList);
-            tmp2.addAll(previousIssuesList);
-
-            previousIssuesList.removeAll(actualIssuesList);
-            removedIssuesList.addAll(previousIssuesList);
-
-            actualIssuesList.clear();
-            previousIssuesList.clear();
-            actualIssuesList.addAll(tmp1);
-            previousIssuesList.addAll(tmp2);
-            tmp1.clear();
-            tmp2.clear();
-
-            //GETTING ADDED ISSUES
-            // TODO FIX THIS PART OF THE CODE
-            tmp1.addAll(actualIssuesList);
-            tmp2.addAll(previousIssuesList);
-
-            actualIssuesList.removeAll(previousIssuesList);
-            addedIssuesList.addAll(actualIssuesList);
-
-            actualIssuesList.clear();
-            previousIssuesList.clear();
-            actualIssuesList.addAll(tmp1);
-            previousIssuesList.addAll(tmp2);
-            tmp1.clear();
-            tmp2.clear();
-
-            if (!addedIssuesList.isEmpty()) {
-                for (String item : addedIssuesList) {
-                    JSONObject json_item = connection.getIssueInfo(item);
-                    String priority = "None";
-                    try {
-                        priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
-                    } catch (org.json.JSONException exception) {
-                        priority = "None";
-                    }
-
-                    String summary = json_item.getJSONObject("fields").getString("summary");
-
-                    String message_text = ":heavy_plus_sign: New issue in *<" + jiraUrl +
-                            "/issues/?filter=" + filterNumber + "|" + filterName + ">*\n" +
-                            "*:black_small_square:Issue: * <" + jiraUrl + "/browse/" + item + "|" + item + ">\n" +
-                            "*:black_small_square:Priority: * " + priority + "\n" +
-                            "*:black_small_square:Summary: * " + summary + "\n" +
-                            "*:black_small_square:Total in filter: * " + connection.getFilterCount(request);
-                    ZoomSlack.sendMessage(message_text, webhookUrl);
+            try {
+                JSONArray jsonIssuesList = connection.getFilterList(request);
+                tmp1.clear();
+                tmp2.clear();
+                addedIssuesList.clear();
+                removedIssuesList.clear();
+                previousIssuesList.clear();
+                previousIssuesList.addAll(actualIssuesList);
+                actualIssuesList.clear();
+                for (int i = 0; i < jsonIssuesList.length(); i++) {
+                    String issue = jsonIssuesList.getJSONObject(i).getString("key");
+                    actualIssuesList.add(issue);
                 }
-            }
 
-            if (!removedIssuesList.isEmpty()) {
-                for (String item : removedIssuesList) {
-                    JSONObject json_item = connection.getIssueInfo(item);
-                    String priority = "None";
-                    String resolution = "None";
-                    try {
-                        priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
-                    } catch (org.json.JSONException exception) {
-                        priority = "None";
-                    }
-                    String summary = json_item.getJSONObject("fields").getString("summary");
-                    try {
-                        resolution = json_item.getJSONObject("fields").getJSONObject("resolution").getString("name");
-                    } catch (org.json.JSONException exception) {
-                        resolution = "None";
-                    }
+                // GETTING REMOVED ISSUES
+                // TODO FIX THIS PART OF THE CODE
+                tmp1.addAll(actualIssuesList);
+                tmp2.addAll(previousIssuesList);
 
-                    String message_text = ":heavy_minus_sign: Issue removed from *<" + jiraUrl + "/issues/?filter=" +
-                            filterNumber + "|" + filterName + ">*\n" +
-                            "*:black_small_square:Issue: * <" + jiraUrl + "/browse/" + item + "|" + item + ">\n" +
-                            "*:black_small_square:Priority: * " + priority + "\n" +
-                            "*:black_small_square:Summary: * " + summary + "\n" +
-                            "*:black_small_square:Resolution: * " + resolution + "\n" +
-                            "*:black_small_square:Total in filter: * " + connection.getFilterCount(request);
-                    ZoomSlack.sendMessage(message_text, webhookUrl);
+                previousIssuesList.removeAll(actualIssuesList);
+                removedIssuesList.addAll(previousIssuesList);
+
+                actualIssuesList.clear();
+                previousIssuesList.clear();
+                actualIssuesList.addAll(tmp1);
+                previousIssuesList.addAll(tmp2);
+                tmp1.clear();
+                tmp2.clear();
+
+                //GETTING ADDED ISSUES
+                // TODO FIX THIS PART OF THE CODE
+                tmp1.addAll(actualIssuesList);
+                tmp2.addAll(previousIssuesList);
+
+                actualIssuesList.removeAll(previousIssuesList);
+                addedIssuesList.addAll(actualIssuesList);
+
+                actualIssuesList.clear();
+                previousIssuesList.clear();
+                actualIssuesList.addAll(tmp1);
+                previousIssuesList.addAll(tmp2);
+                tmp1.clear();
+                tmp2.clear();
+
+                if (!addedIssuesList.isEmpty()) {
+                    for (String item : addedIssuesList) {
+                        JSONObject json_item = connection.getIssueInfo(item);
+                        String priority = "None";
+                        try {
+                            priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
+                        } catch (org.json.JSONException exception) {
+                            priority = "None";
+                        }
+
+                        String summary = json_item.getJSONObject("fields").getString("summary");
+
+                        String message_text = ":heavy_plus_sign: New issue in *<" + jiraUrl +
+                                "/issues/?filter=" + filterNumber + "|" + filterName + ">*\n" +
+                                "*:black_small_square:Issue: * <" + jiraUrl + "/browse/" + item + "|" + item + ">\n" +
+                                "*:black_small_square:Priority: * " + priority + "\n" +
+                                "*:black_small_square:Summary: * " + summary + "\n" +
+                                "*:black_small_square:Total in filter: * " + connection.getFilterCount(request);
+                        ZoomSlack.sendMessage(message_text, webhookUrl);
+                    }
+                }
+                if (!removedIssuesList.isEmpty()) {
+                    for (String item : removedIssuesList) {
+                        JSONObject json_item = connection.getIssueInfo(item);
+                        String priority = "None";
+                        String resolution = "None";
+                        try {
+                            priority = json_item.getJSONObject("fields").getJSONObject("priority").getString("name");
+                        } catch (org.json.JSONException exception) {
+                            priority = "None";
+                        }
+                        String summary = json_item.getJSONObject("fields").getString("summary");
+                        try {
+                            resolution = json_item.getJSONObject("fields").getJSONObject("resolution").getString("name");
+                        } catch (org.json.JSONException exception) {
+                            resolution = "None";
+                        }
+
+                        String message_text = ":heavy_minus_sign: Issue removed from *<" + jiraUrl + "/issues/?filter=" +
+                                filterNumber + "|" + filterName + ">*\n" +
+                                "*:black_small_square:Issue: * <" + jiraUrl + "/browse/" + item + "|" + item + ">\n" +
+                                "*:black_small_square:Priority: * " + priority + "\n" +
+                                "*:black_small_square:Summary: * " + summary + "\n" +
+                                "*:black_small_square:Resolution: * " + resolution + "\n" +
+                                "*:black_small_square:Total in filter: * " + connection.getFilterCount(request);
+                        ZoomSlack.sendMessage(message_text, webhookUrl);
+                    }
+                }
+                if(jiraAvailabilityFlag == false) {
+                    ZoomSlack.sendMessage(":exclamation: Jira server becomes available", webhookUrl);
+                }
+                jiraAvailabilityFlag = true;
+            } catch (Exception e) {
+                if(jiraAvailabilityFlag == true) {
+                    jiraAvailabilityFlag = false;
+                    ZoomSlack.sendMessage(":exclamation: Jira server is unavailable", webhookUrl);
+                } else {
+                    jiraAvailabilityFlag = false;
                 }
             }
 
