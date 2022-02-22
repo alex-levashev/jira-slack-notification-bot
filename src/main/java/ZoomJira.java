@@ -96,5 +96,4 @@ public class ZoomJira {
         JSONObject resultJson = this.getJsonFromURL(requestUrl);
         return resultJson;
     }
-
 }
